@@ -60,7 +60,7 @@ nav .bd{position:absolute;top:2px;right:50%;margin-right:-18px;background:#c0392
   <div class="box">
     <h2>🌲 غابات النعامة</h2><p>نظام المراقبة والمتابعة الميدانية</p>
     <label>اسم المستخدم</label><input id="u" autocapitalize="none" autocomplete="off">
-    <label>كلمة المرور</label><input id="p" type="password">
+    <label>كلمة المرور</label><input id="p" type="password" autocapitalize="none" autocomplete="current-password">
     <button class="btn" id="loginBtn">تسجيل الدخول</button>
     <div class="hint hide" id="cfgWarn" style="color:#a52a1d">⚠️ لم تُضبط إعدادات Firebase داخل الملف بعد.</div>
     <button class="btn" id="regLink" style="background:#2a7a4b;margin-top:14px">🆕 تسجيل جديد (موظف جديد)</button>
@@ -149,7 +149,7 @@ nav .bd{position:absolute;top:2px;right:50%;margin-right:-18px;background:#c0392
     <h3 style="margin-top:0">مستخدم جديد</h3>
     <label>الاسم الظاهر</label><input id="nName">
     <label>اسم المستخدم (بالإنجليزية)</label><input id="nUser" autocapitalize="none">
-    <label>كلمة المرور (6 أحرف فأكثر)</label><input id="nPass">
+    <label>كلمة المرور (6 أحرف فأكثر)</label><input id="nPass" autocapitalize="none" autocomplete="off" spellcheck="false">
     <label>النوع</label><select id="nRole"><option value="worker">عامل</option><option value="vehicle">سيارة</option><option value="admin">مدير</option></select>
     <button class="btn" id="nSave">إنشاء الحساب</button>
     <button class="btn gray" id="nCancel">إلغاء</button>
@@ -222,7 +222,7 @@ async function login(){
   const u=$('u').value.trim().toLowerCase(), p=$('p').value;
   if(!u||!p) return alert('أدخل اسم المستخدم وكلمة المرور');
   $('loginBtn').disabled=true;
-  try{ await auth.signInWithEmailAndPassword(u+DOMAIN,p); }
+  try{ try{ await auth.signInWithEmailAndPassword(u+DOMAIN,p); }catch(e1){ if(p.trim()!==p) await auth.signInWithEmailAndPassword(u+DOMAIN,p.trim()); else throw e1; } }
   catch(e){ alert('اسم المستخدم أو كلمة المرور غير صحيحة'); }
   $('loginBtn').disabled=false;
 }
@@ -311,7 +311,7 @@ $('regBtn').onclick=async()=>{
 $('addUserBtn').onclick=()=>{ ['nName','nUser','nPass'].forEach(i=>$(i).value=''); $('uSheet').classList.remove('hide'); };
 $('nCancel').onclick=()=>$('uSheet').classList.add('hide');
 $('nSave').onclick=async()=>{
-  const name=$('nName').value.trim(), un=$('nUser').value.trim().toLowerCase(), pw=$('nPass').value, role=$('nRole').value;
+  const name=$('nName').value.trim(), un=$('nUser').value.trim().toLowerCase(), pw=$('nPass').value.trim(), role=$('nRole').value;
   if(!name||!/^[a-z0-9_.-]+$/.test(un)||pw.length<6) return alert('أدخل الاسم، واسم مستخدم بحروف إنجليزية، وكلمة مرور 6 أحرف على الأقل');
   $('nSave').disabled=true;
   try{
@@ -320,6 +320,7 @@ $('nSave').onclick=async()=>{
     await db.ref('users/'+c.user.uid).set({username:un,name,role});
     await sec.auth().signOut();
     $('uSheet').classList.add('hide'); say('تم إنشاء الحساب: '+un);
+    alert('تم إنشاء الحساب ✅\nاسم المستخدم: '+un+'\nكلمة المرور: '+pw+'\n(سجّلهما وأرسلهما للشخص)');
   }catch(e){ alert('تعذر الإنشاء: '+(e.code==='auth/email-already-in-use'?'اسم المستخدم مستخدم مسبقًا':e.message)); }
   $('nSave').disabled=false;
 };
@@ -364,19 +365,16 @@ function savePos(lat,lng,active){
 $('startBtn').onclick = () => {
   $('startBtn').disabled=true; $('endBtn').disabled=false;
   addLog(me.role==='vehicle'?'انطلاق العمل':'تسجيل الحضور'); say('تم بدء التتبع'); db.ref('pos/'+me.id).onDisconnect().update({active:false});
-  const old=store.get('pro_pos',{})[me.id], idx=TEAM.indexOf(me.id);
-  let lat=old?old.lat:CENTER[0]+idx*0.012, lng=old?old.lng:CENTER[1]+idx*0.012;
-  const simulate=()=>{
-    savePos(lat,lng,true);
-    tracker={sim:setInterval(()=>{ lat+=(Math.random()-.45)*.002; lng+=(Math.random()-.45)*.002; savePos(lat,lng,true); },2000)};
-    say('GPS غير متاح: تتبع تجريبي (محاكاة)');
-  };
-  if(!navigator.geolocation) return simulate();
-  let got=false;
+  if(!navigator.geolocation){ alert('هذا المتصفح لا يدعم تحديد الموقع'); $('startBtn').disabled=false; $('endBtn').disabled=true; return; }
   const w=navigator.geolocation.watchPosition(
-    p=>{ got=true; savePos(p.coords.latitude,p.coords.longitude,true); },
-    ()=>{ if(!got){ navigator.geolocation.clearWatch(w); simulate(); } },
-    {enableHighAccuracy:true,timeout:8000});
+    p=>savePos(p.coords.latitude,p.coords.longitude,true),
+    e=>{
+      if(e.code===1){
+        alert('الموقع غير مسموح 🚫\n1) اضغط أيقونة 🔒 بجانب عنوان الموقع ثم «الأذونات» ثم «الموقع» واختر «سماح»\n2) تأكد أن «الموقع» (GPS) مفعّل في إعدادات الهاتف\n3) أعد المحاولة');
+        stopTrack(false);
+      } else { $('gps').textContent='جارٍ البحث عن إشارة GPS… اخرج إلى مكان مكشوف'; }
+    },
+    {enableHighAccuracy:true,timeout:20000,maximumAge:5000});
   tracker={gps:w};
 };
 $('endBtn').onclick = () => stopTrack(true);
