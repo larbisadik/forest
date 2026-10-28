@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام مراقبة محافظة الغابات النعامة</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--pri:#1f6f43;--dark:#12331f;--bg:#eef3f0;--card:#fff;--txt:#1b2a22;--mut:#6b7c72;--line:#dde6e0}
+*{box-sizing:border-box}
+body{font-family:Tahoma,Arial,sans-serif;margin:0;background:var(--bg);color:var(--txt);min-height:100dvh}
+.hide{display:none!important}
+.login{min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:16px;background:linear-gradient(160deg,#12331f,#2a7a4b)}
+.box{background:#fff;border-radius:18px;padding:22px;width:100%;max-width:400px;box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.box h2{margin:0 0 4px;color:var(--dark)}.box p{margin:0 0 14px;color:var(--mut);font-size:13px}
+label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font:inherit;font-size:15px;background:#fafcfb;color:var(--txt)}
+textarea{min-height:90px;resize:vertical}
+.btn{display:block;width:100%;padding:13px;margin-top:10px;border:none;border-radius:10px;background:var(--pri);color:#fff;font:inherit;font-weight:bold;font-size:16px;cursor:pointer}
+.btn.red{background:#c0392b}.btn.gray{background:#8a9a91}.btn.amber{background:#d8900b}.btn.sm{width:auto;display:inline-block;padding:8px 12px;font-size:13px;margin:0}
+.btn:disabled{opacity:.4}
+.hint{font-size:12px;color:var(--mut);line-height:1.9;margin-top:12px;background:#f3f7f5;padding:10px;border-radius:10px}
+.top{position:sticky;top:0;z-index:500;background:var(--dark);color:#fff;padding:12px 14px;display:flex;justify-content:space-between;align-items:center}
+.top small{display:block;color:#a9d3b8;font-size:12px}
+.top button{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:8px;padding:8px 12px;font:inherit;cursor:pointer}
+main{max-width:760px;margin:0 auto;padding:12px 12px 90px}
+.card{background:var(--card);border-radius:14px;padding:14px;margin-bottom:10px;box-shadow:0 1px 3px rgba(0,0,0,.07)}
+.card h3{margin:0 0 8px;font-size:16px}
+nav{position:fixed;bottom:0;inset-inline:0;background:#fff;border-top:1px solid var(--line);display:flex;z-index:600}
+nav button{flex:1;border:none;background:none;padding:8px 2px 10px;font:inherit;font-size:11px;color:var(--mut);position:relative;cursor:pointer}
+nav button span{display:block;font-size:20px}
+nav button.on{color:var(--pri);font-weight:bold}
+nav .bd{position:absolute;top:2px;right:50%;margin-right:-18px;background:#c0392b;color:#fff;border-radius:9px;font-size:10px;padding:1px 5px}
+#map{height:58vh;border-radius:14px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.chip{display:inline-block;padding:3px 10px;border-radius:12px;font-size:12px;background:#e8efeb;color:var(--txt)}
+.chip.on{background:#d6f0de;color:#146b36}.chip.off{background:#ececec;color:#777}
+.chip.p1{background:#e8efeb}.chip.p2{background:#fff0c7;color:#8a5a00}.chip.p3{background:#fddcd8;color:#a52a1d}
+.chip.s1{background:#dbe9ff;color:#1b4fa0}.chip.s2{background:#fff0c7;color:#8a5a00}.chip.s3{background:#d6f0de;color:#146b36}
+.pin{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)}
+.pin.wrk{background:#1f9d55}.pin.veh{background:#1b6fd1}.pin.off{background:#8a8a8a}
+.person{display:flex;gap:10px;align-items:center}
+.av{width:42px;height:42px;border-radius:50%;background:#e8efeb;display:flex;align-items:center;justify-content:center;font-size:22px;flex:none}
+.grow{flex:1;min-width:0}.grow b{display:block}.grow small{color:var(--mut)}
+.acts{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.day{font-weight:bold;color:var(--pri);margin:14px 4px 6px;font-size:14px}
+.ent p{margin:6px 0;white-space:pre-wrap;line-height:1.7}.ent small{color:var(--mut)}
+.row{display:flex;gap:8px}.row>div{flex:1}
+.tabs{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto}.tabs button{flex:none;border:1px solid var(--line);background:#fff;border-radius:18px;padding:7px 14px;font:inherit;font-size:13px;cursor:pointer}.tabs .on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:1000;display:flex;align-items:flex-end;justify-content:center}
+.sheet .box{border-radius:18px 18px 0 0;max-width:520px;max-height:92vh;overflow-y:auto}
+#toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);background:#12331f;color:#fff;padding:10px 18px;border-radius:20px;font-size:14px;z-index:2000;opacity:0;transition:.3s;pointer-events:none}
+#toast.show{opacity:1}
+.empty{text-align:center;color:var(--mut);padding:24px}
+</style>
+</head>
+<body>
+
+<div class="login" id="loginPage">
+  <div class="box">
+    <h2>🌲 غابات النعامة</h2><p>نظام المراقبة والمتابعة الميدانية</p>
+    <label>اسم المستخدم</label><input id="u" autocapitalize="none" autocomplete="off">
+    <label>كلمة المرور</label><input id="p" type="password">
+    <button class="btn" id="loginBtn">تسجيل الدخول</button>
+    <div class="hint hide" id="cfgWarn" style="color:#a52a1d">⚠️ لم تُضبط إعدادات Firebase داخل الملف بعد.</div>
+    <button class="btn" id="regLink" style="background:#2a7a4b;margin-top:14px">🆕 تسجيل جديد (موظف جديد)</button>
+    <div id="regBox" class="hide">
+      <label>الاسم</label><input id="rName">
+      <label>اسم المستخدم (بالإنجليزية)</label><input id="rUser" autocapitalize="none">
+      <label>كلمة المرور (6 أحرف فأكثر)</label><input id="rPass" type="password">
+      <label>أنا</label><select id="rRole"><option value="worker">عامل</option><option value="vehicle">سيارة / سائق</option></select>
+      <button class="btn" id="regBtn">إرسال طلب التسجيل</button>
+    </div>
+    <button class="btn gray" id="setupLink" style="font-size:13px;padding:9px">أول استخدام؟ إنشاء حساب المدير</button>
+    <div id="setupBox" class="hide">
+      <label>الاسم</label><input id="sName">
+      <label>اسم المستخدم (بالإنجليزية)</label><input id="sUser" autocapitalize="none">
+      <label>كلمة المرور (6 أحرف فأكثر)</label><input id="sPass" type="password">
+      <button class="btn" id="setupBtn">إنشاء حساب المدير</button>
+    </div>
+  </div>
+</div>
+
+<div id="app" class="hide">
+  <div class="top"><div><b id="hello"></b><small id="roleLbl"></small></div><button id="logoutBtn">خروج</button></div>
+  <main>
+    <!-- الإدارة -->
+    <section class="view hide" id="v-map">
+      <div class="chips" id="mapInfo"></div>
+      <div id="map"></div>
+      <div class="chips" style="margin-top:8px"><span class="chip on">🟢 عامل/سيارة متصل</span><span class="chip off">⚪ غير متصل (آخر موقع)</span></div>
+    </section>
+    <section class="view hide" id="v-team"><button class="btn" id="addUserBtn">➕ إضافة عامل / سيارة</button><div id="teamList" style="margin-top:10px"></div></section>
+    <section class="view hide" id="v-atasks">
+      <button class="btn" id="newTaskBtn">➕ مهمة جديدة</button>
+      <div class="tabs" id="taskTabs" style="margin-top:10px"></div>
+      <div id="aTaskList"></div>
+    </section>
+    <section class="view hide" id="v-ajournal">
+      <div class="card">
+        <label>الشخص</label><select id="jWho"></select>
+        <label>التاريخ (اختياري)</label><input type="date" id="jDate">
+      </div>
+      <div id="aJournalList"></div>
+    </section>
+    <section class="view hide" id="v-logs"><div id="logList"></div></section>
+
+    <!-- العامل / السيارة -->
+    <section class="view hide" id="v-home">
+      <div class="card">
+        <h3 id="presTitle"></h3>
+        <button class="btn" id="startBtn"></button>
+        <button class="btn gray" id="endBtn" disabled></button>
+        <div id="gps" style="text-align:center;font-size:13px;color:var(--mut);margin-top:8px"></div>
+      </div>
+      <div class="card"><h3>ملخص اليوم</h3><div id="homeSum"></div></div>
+    </section>
+    <section class="view hide" id="v-tasks"><div id="myTaskList"></div></section>
+    <section class="view hide" id="v-journal">
+      <div class="card">
+        <h3>إضافة إلى الدفتر اليومي</h3>
+        <div class="row"><div><label>التاريخ</label><input type="date" id="eDate"></div>
+        <div><label>النوع</label><select id="eType"><option>عمل يومي</option><option>ملاحظة</option><option>بلاغ / حادث</option></select></div></div>
+        <label>التفاصيل</label><textarea id="eText" placeholder="اكتب أعمال اليوم أو ملاحظاتك..."></textarea>
+        <button class="btn" id="eSave">حفظ</button>
+      </div>
+      <div id="myJournalList"></div>
+    </section>
+  </main>
+  <nav id="nav"></nav>
+</div>
+
+<div class="sheet hide" id="sheet">
+  <div class="box">
+    <h3 style="margin-top:0">مهمة جديدة</h3>
+    <label>المرسل إليه</label><select id="tTo"></select>
+    <label>عنوان المهمة</label><input id="tTitle">
+    <label>التفاصيل</label><textarea id="tDesc"></textarea>
+    <div class="row">
+      <div><label>الأولوية</label><select id="tPri"><option>عادية</option><option>مهمة</option><option>عاجلة</option></select></div>
+      <div><label>الموعد</label><input type="date" id="tDue"></div>
+    </div>
+    <button class="btn" id="tSend">إرسال المهمة</button>
+    <button class="btn gray" id="tCancel">إلغاء</button>
+  </div>
+</div>
+<div class="sheet hide" id="uSheet">
+  <div class="box">
+    <h3 style="margin-top:0">مستخدم جديد</h3>
+    <label>الاسم الظاهر</label><input id="nName">
+    <label>اسم المستخدم (بالإنجليزية)</label><input id="nUser" autocapitalize="none">
+    <label>كلمة المرور (6 أحرف فأكثر)</label><input id="nPass">
+    <label>النوع</label><select id="nRole"><option value="worker">عامل</option><option value="vehicle">سيارة</option><option value="admin">مدير</option></select>
+    <button class="btn" id="nSave">إنشاء الحساب</button>
+    <button class="btn gray" id="nCancel">إلغاء</button>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+/* ===== ضع إعدادات مشروعك من Firebase Console هنا ===== */
+const firebaseConfig = {
+  apiKey: "AIzaSyAXNO2odYvmabXO3jyCuEQxPNS3jmUTbDY",
+  authDomain: "naama-forest-8f58c.firebaseapp.com",
+  databaseURL: "https://naama-forest-8f58c-default-rtdb.firebaseio.com",
+  projectId: "naama-forest-8f58c",
+  appId: "1:119337983449:web:267aba60e3019684be0dc8"
+};
+const cfgOk = !firebaseConfig.apiKey.startsWith('YOUR_');
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth(), db = firebase.database();
+const DOMAIN = '@naama.local';
+let USERS = {};
+const ROLE_LBL = { admin:'مدير النظام', worker:'عامل', vehicle:'سيارة' };
+const CENTER = [33.27, -0.31]; // النعامة
+let TEAM = [];
+
+/* ---------- أدوات ---------- */
+let cache = {pro_pos:{},pro_tasks:[],pro_journal:[],pro_logs:[]}, base = {};
+const PATH = {pro_pos:'pos',pro_tasks:'tasks',pro_journal:'journal',pro_logs:'logs'};
+const clone = v => JSON.parse(JSON.stringify(v));
+function setCache(k,v){ cache[k]=v; base[k]=clone(v); }
+const store = {
+  get(k,d){ return cache[k]!==undefined?cache[k]:d; },
+  set(k,v){ // يرسل إلى Firebase التغييرات فقط (إضافة/تعديل/حذف)
+    const old=base[k]||[], up={}, om={}, nm={};
+    old.forEach(x=>om[x.id]=x); v.forEach(x=>nm[x.id]=x);
+    v.forEach(x=>{ if(!om[x.id]||JSON.stringify(om[x.id])!==JSON.stringify(x)) up[x.id]=x; });
+    old.forEach(x=>{ if(!nm[x.id]) up[x.id]=null; });
+    setCache(k,v);
+    if(Object.keys(up).length) db.ref(PATH[k]).update(up).catch(e=>say('تعذر الحفظ: '+e.code));
+  }
+};
+const $ = id => document.getElementById(id);
+const el = (t,c,x) => { const e=document.createElement(t); if(c)e.className=c; if(x!=null)e.textContent=x; return e; };
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const pad = n => String(n).padStart(2,'0');
+const today = () => { const d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); };
+const fmtDay = s => new Date(s+'T00:00:00').toLocaleDateString('ar-DZ',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+const fmtTime = ms => new Date(ms).toLocaleString('ar-DZ',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+const ago = ms => { const m=Math.round((Date.now()-ms)/60000); return m<1?'الآن':m<60?`قبل ${m} د`:m<1440?`قبل ${Math.round(m/60)} س`:`قبل ${Math.round(m/1440)} يوم`; };
+const icon = u => u.role==='vehicle'?'🚙':'👷';
+const isOn = p => p && p.active && Date.now()-p.updated < 90000;
+let toastT;
+function say(t){ const e=$('toast'); e.textContent=t; e.classList.add('show'); clearTimeout(toastT); toastT=setTimeout(()=>e.classList.remove('show'),2800); }
+function empty(box,t){ box.appendChild(el('div','empty',t)); }
+
+let me=null, cur=null, map=null, markers={}, fitted=false, tracker=null, taskFilter='الكل';
+
+/* ---------- الدخول ---------- */
+$('loginBtn').onclick = login;
+$('p').onkeydown = e => { if(e.key==='Enter') login(); };
+let unsubs=[], settingUp=false, sec=null;
+if(!cfgOk) $('cfgWarn').classList.remove('hide');
+
+async function login(){
+  if(!cfgOk) return alert('ضع إعدادات Firebase داخل الملف أولًا');
+  const u=$('u').value.trim().toLowerCase(), p=$('p').value;
+  if(!u||!p) return alert('أدخل اسم المستخدم وكلمة المرور');
+  $('loginBtn').disabled=true;
+  try{ await auth.signInWithEmailAndPassword(u+DOMAIN,p); }
+  catch(e){ alert('اسم المستخدم أو كلمة المرور غير صحيحة'); }
+  $('loginBtn').disabled=false;
+}
+$('logoutBtn').onclick = async () => { stopTrack(true); await auth.signOut(); };
+
+function listen(ref,key,isArr){
+  const h=ref.on('value',snap=>{
+    const v=snap.val()||{};
+    if(!key){ USERS=v; TEAM=Object.keys(v).filter(k=>v[k].role!=='admin'&&v[k].role!=='pending'); }
+    else setCache(key,isArr?Object.entries(v).map(([id,x])=>({...x,id})):v);
+    render();
+  },e=>console.warn(e.message));
+  unsubs.push(()=>ref.off('value',h));
+}
+function detach(){ unsubs.forEach(f=>f()); unsubs=[]; }
+
+auth.onAuthStateChanged(async user=>{
+  if(settingUp) return;
+  detach();
+  if(!user){ me=null; $('app').classList.add('hide'); $('loginPage').classList.remove('hide'); $('p').value=''; return; }
+  let prof=null;
+  try{ prof=(await db.ref('users/'+user.uid).once('value')).val(); }catch(e){}
+  if(!prof){ alert('الحساب غير مُفعّل. تواصل مع الإدارة.'); return auth.signOut(); }
+  if(prof.role==='pending'){ alert('طلبك قيد المراجعة ⏳ انتظر موافقة المدير ثم حاول مرة أخرى.'); return auth.signOut(); }
+  me={id:user.uid,...prof}; startApp();
+});
+
+function startApp(){
+  $('loginPage').classList.add('hide'); $('app').classList.remove('hide');
+  $('hello').textContent=me.name; $('roleLbl').textContent=ROLE_LBL[me.role];
+  cache={pro_pos:{},pro_tasks:[],pro_journal:[],pro_logs:[]}; base={};
+  if(map){ map.remove(); map=null; } markers={}; fitted=false;
+  USERS={[me.id]:me}; TEAM=[];
+  buildNav();
+  if(me.role==='admin'){
+    listen(db.ref('users'),null);
+    listen(db.ref('pos'),'pro_pos',false);
+    listen(db.ref('tasks'),'pro_tasks',true);
+    listen(db.ref('journal'),'pro_journal',true);
+    listen(db.ref('logs').orderByChild('time').limitToLast(200),'pro_logs',true);
+  } else {
+    $('presTitle').textContent = me.role==='vehicle'?'🚙 حالة السيارة':'👷 الحضور';
+    $('startBtn').textContent = me.role==='vehicle'?'انطلاق العمل (بدء التتبع)':'تسجيل الحضور (مشاركة الموقع)';
+    $('endBtn').textContent = me.role==='vehicle'?'نهاية العمل':'تسجيل الانصراف';
+    $('startBtn').disabled=false; $('endBtn').disabled=true; $('eDate').value=today();
+    listen(db.ref('tasks').orderByChild('to').equalTo(me.id),'pro_tasks',true);
+    listen(db.ref('journal').orderByChild('uid').equalTo(me.id),'pro_journal',true);
+  }
+  go(me.role==='admin'?'map':'home');
+}
+
+/* إعداد أول مدير (يعمل مرة واحدة فقط) */
+$('setupLink').onclick=()=>$('setupBox').classList.toggle('hide');
+$('setupBtn').onclick=async()=>{
+  if(!cfgOk) return alert('ضع إعدادات Firebase داخل الملف أولًا');
+  const name=$('sName').value.trim(), un=$('sUser').value.trim().toLowerCase(), pw=$('sPass').value;
+  if(!name||!/^[a-z0-9_.-]+$/.test(un)||pw.length<6) return alert('أدخل الاسم، واسم مستخدم بحروف إنجليزية، وكلمة مرور 6 أحرف على الأقل');
+  settingUp=true;
+  try{
+    const c=await auth.createUserWithEmailAndPassword(un+DOMAIN,pw);
+    try{ await db.ref('users/'+c.user.uid).set({username:un,name,role:'admin'}); }
+    catch(e){ await c.user.delete(); settingUp=false; return alert('تم الإعداد مسبقًا. اطلب من المدير إنشاء حسابك.'); }
+    settingUp=false; await auth.signOut(); await auth.signInWithEmailAndPassword(un+DOMAIN,pw);
+  }catch(e){ settingUp=false; alert('تعذر الإنشاء: '+e.message); }
+};
+
+/* تسجيل ذاتي: يبقى الحساب «قيد المراجعة» حتى يوافق المدير */
+$('regLink').onclick=()=>$('regBox').classList.toggle('hide');
+$('regBtn').onclick=async()=>{
+  if(!cfgOk) return alert('ضع إعدادات Firebase داخل الملف أولًا');
+  const name=$('rName').value.trim(), un=$('rUser').value.trim().toLowerCase(), pw=$('rPass').value, want=$('rRole').value;
+  if(!name||!/^[a-z0-9_.-]+$/.test(un)||pw.length<6) return alert('أدخل الاسم، واسم مستخدم بحروف إنجليزية، وكلمة مرور 6 أحرف على الأقل');
+  settingUp=true; $('regBtn').disabled=true;
+  try{
+    const c=await auth.createUserWithEmailAndPassword(un+DOMAIN,pw);
+    try{ await db.ref('users/'+c.user.uid).set({username:un,name,role:'pending',want}); }
+    catch(e){ await c.user.delete(); settingUp=false; $('regBtn').disabled=false; return alert('التسجيل غير مفعّل بعد. تواصل مع المدير.'); }
+    settingUp=false; await auth.signOut();
+    $('regBox').classList.add('hide'); ['rName','rUser','rPass'].forEach(i=>$(i).value='');
+    alert('تم إرسال طلبك ✅ انتظر موافقة المدير ثم ادخل بحسابك.');
+  }catch(e){ settingUp=false; alert(e.code==='auth/email-already-in-use'?'اسم المستخدم مستخدم، اختر اسمًا آخر':'تعذر التسجيل: '+e.message); }
+  $('regBtn').disabled=false;
+};
+
+/* إضافة مستخدم (من الإدارة) */
+$('addUserBtn').onclick=()=>{ ['nName','nUser','nPass'].forEach(i=>$(i).value=''); $('uSheet').classList.remove('hide'); };
+$('nCancel').onclick=()=>$('uSheet').classList.add('hide');
+$('nSave').onclick=async()=>{
+  const name=$('nName').value.trim(), un=$('nUser').value.trim().toLowerCase(), pw=$('nPass').value, role=$('nRole').value;
+  if(!name||!/^[a-z0-9_.-]+$/.test(un)||pw.length<6) return alert('أدخل الاسم، واسم مستخدم بحروف إنجليزية، وكلمة مرور 6 أحرف على الأقل');
+  $('nSave').disabled=true;
+  try{
+    sec=sec||firebase.initializeApp(firebaseConfig,'sec');
+    const c=await sec.auth().createUserWithEmailAndPassword(un+DOMAIN,pw);
+    await db.ref('users/'+c.user.uid).set({username:un,name,role});
+    await sec.auth().signOut();
+    $('uSheet').classList.add('hide'); say('تم إنشاء الحساب: '+un);
+  }catch(e){ alert('تعذر الإنشاء: '+(e.code==='auth/email-already-in-use'?'اسم المستخدم مستخدم مسبقًا':e.message)); }
+  $('nSave').disabled=false;
+};
+
+/* ---------- التنقل ---------- */
+function buildNav(){
+  const items = me.role==='admin'
+    ? [['map','🗺️','الخريطة'],['team','👥','الفريق'],['atasks','📋','المهام'],['ajournal','📖','الدفاتر'],['logs','🕒','السجل']]
+    : [['home','🏠','الرئيسية'],['tasks','📋','مهامي'],['journal','📖','دفتري']];
+  const nav=$('nav'); nav.innerHTML='';
+  items.forEach(([v,i,t])=>{
+    const b=el('button'); b.dataset.v=v; b.appendChild(el('span',null,i)); b.appendChild(document.createTextNode(t));
+    if(v==='tasks'||v==='team'){ const bd=el('em','bd'); bd.id='badge_'+v; bd.style.fontStyle='normal'; b.appendChild(bd); }
+    b.onclick=()=>go(v); nav.appendChild(b);
+  });
+}
+function go(v){
+  cur=v;
+  document.querySelectorAll('.view').forEach(s=>s.classList.add('hide'));
+  $('v-'+v).classList.remove('hide');
+  document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+  if(v==='map') initMap();
+  render(); window.scrollTo(0,0);
+}
+function render(){
+  if(!me) return;
+  ({map:renderMap,team:renderTeam,atasks:renderATasks,ajournal:renderAJournal,logs:renderLogs,home:renderHome,tasks:renderMyTasks,journal:renderMyJournal})[cur]?.();
+  if(me.role!=='admin'){ const n=store.get('pro_tasks',[]).filter(t=>t.to===me.id&&t.status==='جديدة').length; const b=$('badge_tasks'); if(b){ b.textContent=n; b.classList.toggle('hide',!n); } } else { const pn=Object.values(USERS).filter(u=>u.role==='pending').length; const b2=$('badge_team'); if(b2){ b2.textContent=pn; b2.classList.toggle('hide',!pn); } }
+}
+setInterval(render, 2500);
+
+/* ---------- السجل ---------- */
+function addLog(action){
+  db.ref('logs').push({uid:me.id,name:me.name,role:me.role,action,time:Date.now()}).catch(()=>{});
+}
+
+/* ---------- تتبع الموقع (عامل/سيارة) ---------- */
+function savePos(lat,lng,active){
+  db.ref('pos/'+me.id).set({lat,lng,active,updated:Date.now()}).catch(()=>{});
+  $('gps').textContent=`الموقع: ${lat.toFixed(5)} , ${lng.toFixed(5)}`;
+}
+$('startBtn').onclick = () => {
+  $('startBtn').disabled=true; $('endBtn').disabled=false;
+  addLog(me.role==='vehicle'?'انطلاق العمل':'تسجيل الحضور'); say('تم بدء التتبع'); db.ref('pos/'+me.id).onDisconnect().update({active:false});
+  const old=store.get('pro_pos',{})[me.id], idx=TEAM.indexOf(me.id);
+  let lat=old?old.lat:CENTER[0]+idx*0.012, lng=old?old.lng:CENTER[1]+idx*0.012;
+  const simulate=()=>{
+    savePos(lat,lng,true);
+    tracker={sim:setInterval(()=>{ lat+=(Math.random()-.45)*.002; lng+=(Math.random()-.45)*.002; savePos(lat,lng,true); },2000)};
+    say('GPS غير متاح: تتبع تجريبي (محاكاة)');
+  };
+  if(!navigator.geolocation) return simulate();
+  let got=false;
+  const w=navigator.geolocation.watchPosition(
+    p=>{ got=true; savePos(p.coords.latitude,p.coords.longitude,true); },
+    ()=>{ if(!got){ navigator.geolocation.clearWatch(w); simulate(); } },
+    {enableHighAccuracy:true,timeout:8000});
+  tracker={gps:w};
+};
+$('endBtn').onclick = () => stopTrack(true);
+function stopTrack(log){
+  if(!me||me.role==='admin'||!tracker) return;
+  if(tracker.gps!=null) navigator.geolocation.clearWatch(tracker.gps);
+  if(tracker.sim) clearInterval(tracker.sim);
+  tracker=null;
+  db.ref('pos/'+me.id+'/active').set(false);
+  if(log){ addLog(me.role==='vehicle'?'نهاية العمل':'تسجيل الانصراف'); say('تم إيقاف التتبع'); }
+  $('startBtn').disabled=false; $('endBtn').disabled=true; $('gps').textContent='';
+}
+function renderHome(){
+  const box=$('homeSum'); box.innerHTML='';
+  const tasks=store.get('pro_tasks',[]).filter(t=>t.to===me.id);
+  const ents=store.get('pro_journal',[]).filter(e=>e.uid===me.id&&e.date===today());
+  [`📋 مهام جديدة: ${tasks.filter(t=>t.status==='جديدة').length}`,`⏳ قيد التنفيذ: ${tasks.filter(t=>t.status==='قيد التنفيذ').length}`,`📖 تسجيلات اليوم في الدفتر: ${ents.length}`]
+    .forEach(t=>{ const d=el('div',null,t); d.style.padding='4px 0'; box.appendChild(d); });
+}
+
+/* ---------- الإدارة: الخريطة ---------- */
+function initMap(){
+  if(!map){
+    map=L.map('map').setView(CENTER,9);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
+  }
+  setTimeout(()=>map.invalidateSize(),80);
+}
+function pinIcon(u,cls){ return L.divIcon({html:`<div class="pin ${cls}">${icon(u)}</div>`,className:'',iconSize:[34,34],iconAnchor:[17,17]}); }
+function popup(id){
+  const u=USERS[id], p=store.get('pro_pos',{})[id], d=el('div');
+  d.appendChild(el('b',null,`${icon(u)} ${u.name}`)); d.appendChild(el('div',null,ROLE_LBL[u.role]));
+  d.appendChild(el('div',null,isOn(p)?'🟢 متصل الآن':'⚪ غير متصل'));
+  if(p) d.appendChild(el('div',null,'آخر تحديث: '+ago(p.updated)));
+  const b=el('button','btn sm','إرسال مهمة'); b.style.marginTop='8px'; b.onclick=()=>openTask(id); d.appendChild(b);
+  return d;
+}
+function renderMap(){
+  if(!map) return;
+  const pos=store.get('pro_pos',{}); let pts=[], on=0;
+  TEAM.forEach(id=>{
+    const p=pos[id]; if(!p||p.lat==null) return;
+    const u=USERS[id], online=isOn(p), cls=(u.role==='vehicle'?'veh':'wrk')+(online?'':' off'), ll=[p.lat,p.lng];
+    if(!markers[id]){ markers[id]=L.marker(ll,{icon:pinIcon(u,cls)}).addTo(map); markers[id]._cls=cls; markers[id].bindPopup(()=>popup(id)); }
+    else { markers[id].setLatLng(ll); if(markers[id]._cls!==cls){ markers[id].setIcon(pinIcon(u,cls)); markers[id]._cls=cls; } }
+    pts.push(ll); if(online) on++;
+  });
+  const info=$('mapInfo'); info.innerHTML='';
+  info.appendChild(el('span','chip on',`🟢 متصل: ${on} من ${TEAM.length}`));
+  info.appendChild(el('span','chip',`👷 عمال: ${TEAM.filter(i=>USERS[i].role==='worker'&&isOn(pos[i])).length}`));
+  info.appendChild(el('span','chip',`🚙 سيارات: ${TEAM.filter(i=>USERS[i].role==='vehicle'&&isOn(pos[i])).length}`));
+  if(pts.length&&!fitted){ map.fitBounds(pts,{padding:[40,40],maxZoom:13}); fitted=true; }
+}
+
+/* ---------- الإدارة: الفريق ---------- */
+function renderTeam(){
+  const box=$('teamList'); box.innerHTML=''; const pos=store.get('pro_pos',{});
+  Object.entries(USERS).filter(([id,u])=>u.role==='pending').forEach(([id,u])=>{
+    const c=el('div','card'); c.style.borderRight='4px solid #d8900b';
+    c.appendChild(el('b',null,'📩 طلب تسجيل: '+u.name));
+    c.appendChild(el('div',null,'اسم المستخدم: '+u.username+' — يطلب: '+(u.want==='vehicle'?'سيارة':'عامل')));
+    const a=el('div','acts');
+    [['✔ قبول كعامل','worker'],['✔ قبول كسيارة','vehicle']].forEach(([t,r])=>{ const b=el('button','btn sm',t); b.onclick=()=>db.ref('users/'+id+'/role').set(r).then(()=>say('تم القبول')); a.appendChild(b); });
+    const rj=el('button','btn sm red','رفض'); rj.onclick=()=>{ if(confirm('رفض الطلب؟')) db.ref('users/'+id).remove(); }; a.appendChild(rj);
+    c.appendChild(a); box.appendChild(c);
+  });
+  TEAM.forEach(id=>{
+    const u=USERS[id], p=pos[id], on=isOn(p), c=el('div','card'), r=el('div','person');
+    r.appendChild(el('div','av',icon(u)));
+    const g=el('div','grow'); g.appendChild(el('b',null,u.name));
+    g.appendChild(el('small',null,`${ROLE_LBL[u.role]} — ${p?('آخر ظهور: '+ago(p.updated)):'لم يظهر بعد'}`));
+    r.appendChild(g); r.appendChild(el('span','chip '+(on?'on':'off'),on?'🟢 في الميدان':'⚪ غير متصل'));
+    c.appendChild(r);
+    const a=el('div','acts');
+    const b1=el('button','btn sm','📍 على الخريطة'); b1.onclick=()=>{ if(!p) return say('لا يوجد موقع بعد'); go('map'); setTimeout(()=>{ map.setView([p.lat,p.lng],15); markers[id]&&markers[id].openPopup(); },200); };
+    const b2=el('button','btn sm amber','📋 إرسال مهمة'); b2.onclick=()=>openTask(id);
+    const b3=el('button','btn sm gray','📖 الدفتر'); b3.onclick=()=>{ go('ajournal'); $('jWho').value=id; renderAJournal(); };
+    a.append(b1,b2,b3); c.appendChild(a); box.appendChild(c);
+  });
+}
+
+/* ---------- المهام ---------- */
+function openTask(toId){
+  const s=$('tTo'); s.innerHTML='';
+  TEAM.forEach(id=>{ const o=el('option',null,`${icon(USERS[id])} ${USERS[id].name}`); o.value=id; s.appendChild(o); });
+  if(toId) s.value=toId;
+  $('tTitle').value=''; $('tDesc').value=''; $('tDue').value=''; $('tPri').value='عادية';
+  $('sheet').classList.remove('hide');
+}
+$('newTaskBtn').onclick=()=>openTask();
+$('tCancel').onclick=()=>$('sheet').classList.add('hide');
+$('tSend').onclick=()=>{
+  const title=$('tTitle').value.trim(); if(!title) return alert('اكتب عنوان المهمة');
+  const to=$('tTo').value, t=store.get('pro_tasks',[]);
+  t.push({id:uid(),to,toName:USERS[to].name,title,desc:$('tDesc').value.trim(),pri:$('tPri').value,due:$('tDue').value,status:'جديدة',created:Date.now()});
+  store.set('pro_tasks',t); $('sheet').classList.add('hide'); say('تم إرسال المهمة إلى '+USERS[to].name); render();
+};
+const PRI={'عادية':'p1','مهمة':'p2','عاجلة':'p3'}, ST={'جديدة':'s1','قيد التنفيذ':'s2','منجزة':'s3'};
+function taskCard(t,admin){
+  const c=el('div','card'), h=el('div','person'), g=el('div','grow');
+  g.appendChild(el('b',null,t.title)); g.appendChild(el('small',null,(admin?`إلى: ${t.toName} — `:'')+fmtTime(t.created)));
+  h.appendChild(g); h.appendChild(el('span','chip '+PRI[t.pri],t.pri)); c.appendChild(h);
+  if(t.desc){ const p=el('p',null,t.desc); p.style.cssText='margin:8px 0;white-space:pre-wrap;line-height:1.7'; c.appendChild(p); }
+  const f=el('div','acts'); f.appendChild(el('span','chip '+ST[t.status],t.status));
+  if(t.due) f.appendChild(el('span','chip','📅 '+t.due));
+  if(t.doneAt) f.appendChild(el('span','chip','أُنجزت: '+fmtTime(t.doneAt)));
+  if(admin){ const d=el('button','btn sm red','حذف'); d.onclick=()=>{ if(confirm('حذف المهمة؟')){ store.set('pro_tasks',store.get('pro_tasks',[]).filter(x=>x.id!==t.id)); render(); } }; f.appendChild(d); }
+  else {
+    const set=(s)=>{ const all=store.get('pro_tasks',[]), x=all.find(i=>i.id===t.id); x.status=s; if(s==='منجزة') x.doneAt=Date.now(); store.set('pro_tasks',all); addLog(`مهمة «${t.title}» ← ${s}`); render(); };
+    if(t.status==='جديدة'){ const b=el('button','btn sm amber','بدء التنفيذ'); b.onclick=()=>set('قيد التنفيذ'); f.appendChild(b); }
+    if(t.status!=='منجزة'){ const b=el('button','btn sm','✔ تم الإنجاز'); b.onclick=()=>set('منجزة'); f.appendChild(b); }
+  }
+  c.appendChild(f); return c;
+}
+function renderATasks(){
+  const tabs=$('taskTabs'); tabs.innerHTML='';
+  ['الكل','جديدة','قيد التنفيذ','منجزة'].forEach(s=>{ const b=el('button',s===taskFilter?'on':'',s); b.onclick=()=>{ taskFilter=s; renderATasks(); }; tabs.appendChild(b); });
+  const box=$('aTaskList'); box.innerHTML='';
+  const list=store.get('pro_tasks',[]).filter(t=>taskFilter==='الكل'||t.status===taskFilter).sort((a,b)=>b.created-a.created);
+  if(!list.length) return empty(box,'لا توجد مهام');
+  list.forEach(t=>box.appendChild(taskCard(t,true)));
+}
+function renderMyTasks(){
+  const box=$('myTaskList'); box.innerHTML='';
+  const rank={'جديدة':0,'قيد التنفيذ':1,'منجزة':2};
+  const list=store.get('pro_tasks',[]).filter(t=>t.to===me.id).sort((a,b)=>rank[a.status]-rank[b.status]||b.created-a.created);
+  if(!list.length) return empty(box,'لا توجد مهام موجهة إليك');
+  list.forEach(t=>box.appendChild(taskCard(t,false)));
+}
+
+/* ---------- الدفتر اليومي ---------- */
+function entriesView(box,list,canDelete){
+  box.innerHTML='';
+  if(!list.length) return empty(box,'لا توجد تسجيلات');
+  list.sort((a,b)=>b.date.localeCompare(a.date)||b.created-a.created);
+  let last='';
+  list.forEach(e=>{
+    if(e.date!==last){ box.appendChild(el('div','day','📅 '+fmtDay(e.date))); last=e.date; }
+    const c=el('div','card ent'), h=el('div','person'), g=el('div','grow');
+    g.appendChild(el('small',null,(e.name?e.name+' — ':'')+fmtTime(e.created)));
+    h.appendChild(g); h.appendChild(el('span','chip',e.type));
+    if(canDelete){ const d=el('button','btn sm red','✕'); d.onclick=()=>{ if(confirm('حذف التسجيل؟')){ store.set('pro_journal',store.get('pro_journal',[]).filter(x=>x.id!==e.id)); render(); } }; h.appendChild(d); }
+    c.appendChild(h); c.appendChild(el('p',null,e.text)); box.appendChild(c);
+  });
+}
+$('eSave').onclick=()=>{
+  const text=$('eText').value.trim(); if(!text) return alert('اكتب نص التسجيل');
+  const j=store.get('pro_journal',[]);
+  j.push({id:uid(),uid:me.id,name:me.name,date:$('eDate').value||today(),type:$('eType').value,text,created:Date.now()});
+  store.set('pro_journal',j); $('eText').value=''; say('تم الحفظ في الدفتر'); render();
+};
+function renderMyJournal(){ entriesView($('myJournalList'),store.get('pro_journal',[]).filter(e=>e.uid===me.id),true); }
+function renderAJournal(){
+  const s=$('jWho');
+  if(s.options.length!==TEAM.length){ const keep=s.value; s.innerHTML=''; TEAM.forEach(id=>{ const o=el('option',null,`${icon(USERS[id])} ${USERS[id].name}`); o.value=id; s.appendChild(o); }); s.onchange=renderAJournal; $('jDate').onchange=renderAJournal; if(keep) s.value=keep; }
+  const d=$('jDate').value;
+  entriesView($('aJournalList'),store.get('pro_journal',[]).filter(e=>e.uid===s.value&&(!d||e.date===d)),false);
+}
+
+/* ---------- السجل العام ---------- */
+function renderLogs(){
+  const box=$('logList'); box.innerHTML=''; const l=store.get('pro_logs',[]).slice().reverse();
+  if(!l.length) return empty(box,'لا توجد سجلات');
+  l.forEach(x=>{ const c=el('div','card'); c.style.padding='10px 14px'; c.appendChild(el('b',null,x.name)); c.appendChild(el('div',null,x.action)); c.appendChild(el('small',null,fmtTime(x.time))); c.lastChild.style.color='var(--mut)'; box.appendChild(c); });
+}
+</script>
+</body>
+</html>
